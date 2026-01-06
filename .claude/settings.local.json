@@ -19,7 +19,11 @@
       "Bash(git pull origin main --allow-unrelated-histories)",
       "Bash(git checkout --ours README.md)",
       "Bash(git add README.md)",
-      "Bash(git commit -m \"Merge remote and resolve conflicts\")"
+      "Bash(git commit -m \"Merge remote and resolve conflicts\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nUpdate README with project documentation\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(git add -A)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd project run functionality\n\n- Terminal now supports runCommand method\n- Run button detects project type and runs appropriate command\n- Supports: npm, cargo, go, python, maven projects\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

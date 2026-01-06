@@ -5,6 +5,7 @@ import 'xterm/css/xterm.css'
 
 export interface TerminalRef {
   focus: () => void
+  runCommand: (cmd: string) => void
 }
 
 interface TerminalProps {
@@ -17,7 +18,11 @@ const Terminal = React.forwardRef<TerminalRef, TerminalProps>(({ cwd }, ref) => 
   const termIdRef = useRef<string>(`terminal-${Date.now()}`)
 
   React.useImperativeHandle(ref, () => ({
-    focus: () => xtermRef.current?.focus()
+    focus: () => xtermRef.current?.focus(),
+    runCommand: (cmd: string) => {
+      window.api.terminal.write(termIdRef.current, cmd + '\r')
+      xtermRef.current?.focus()
+    }
   }))
 
   useEffect(() => {

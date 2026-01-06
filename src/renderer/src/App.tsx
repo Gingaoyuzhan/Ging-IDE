@@ -30,11 +30,56 @@ function App() {
     setActiveView('editor')
   }
 
-  const handleRun = () => {
+  const handleRun = async () => {
     setShowTerminal(true)
-    setTimeout(() => {
+
+    setTimeout(async () => {
       terminalRef.current?.focus()
-    }, 100)
+
+      if (!projectPath) return
+
+      // 检测项目类型并运行
+      const packageJson = await window.api.fs.exists(`${projectPath}\\package.json`)
+      const cargoToml = await window.api.fs.exists(`${projectPath}\\Cargo.toml`)
+      const goMod = await window.api.fs.exists(`${projectPath}\\go.mod`)
+      const requirements = await window.api.fs.exists(`${projectPath}\\requirements.txt`)
+      const pomXml = await window.api.fs.exists(`${projectPath}\\pom.xml`)
+
+      let cmd = ''
+
+      if (packageJson.data) {
+        // Node.js 项目 - 尝试读取 package.json 获取脚本
+        const content = await window.api.fs.readFile(`${projectPath}\\package.json`)
+        if (content.success && content.data) {
+          try {
+            const pkg = JSON.parse(content.data)
+            if (pkg.scripts?.dev) {
+              cmd = 'npm run dev'
+            } else if (pkg.scripts?.start) {
+              cmd = 'npm start'
+            } else if (pkg.scripts?.serve) {
+              cmd = 'npm run serve'
+            } else {
+              cmd = 'npm start'
+            }
+          } catch {
+            cmd = 'npm start'
+          }
+        }
+      } else if (cargoToml.data) {
+        cmd = 'cargo run'
+      } else if (goMod.data) {
+        cmd = 'go run .'
+      } else if (requirements.data) {
+        cmd = 'python main.py'
+      } else if (pomXml.data) {
+        cmd = 'mvn spring-boot:run'
+      }
+
+      if (cmd) {
+        terminalRef.current?.runCommand(cmd)
+      }
+    }, 200)
   }
 
   return (
