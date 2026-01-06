@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install node-pty --save)",
+      "Bash(npm run typecheck)",
+      "Bash(dir \"%USERPROFILE%\\\\.claude\")",
+      "Bash(npm ls node-pty)",
+      "Bash(npm rebuild node-pty)",
+      "Bash(npm run build:win)",
+      "Bash(git init)",
+      "Bash(git add .)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Ging IDE\n\n- Electron + React + TypeScript desktop IDE\n- Monaco Editor for code editing\n- Real terminal with node-pty\n- File system operations\n- Frameless window with custom title bar\n- Glass morphism UI design\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git add README.md postcss.config.js tailwind.config.js .editorconfig .env.example)",
+      "Bash(git config user.email \"gingaoyuzhan@users.noreply.github.com\")",
+      "Bash(git config user.name \"Gingaoyuzhan\")",
+      "Bash(git remote add origin https://github.com/Gingaoyuzhan/Ging-IDE.git)",
+      "Bash(git branch -M main)",
+      "Bash(git push -u origin main)",
+      "Bash(git pull origin main --allow-unrelated-histories)",
+      "Bash(git checkout --ours README.md)",
+      "Bash(git add README.md)",
+      "Bash(git commit -m \"Merge remote and resolve conflicts\")"
+    ]
+  }
+}

@@ -1,34 +1,76 @@
-# ging
+# Ging IDE
 
-An Electron application with React and TypeScript
+一个基于 Electron + React + TypeScript 构建的现代化桌面 IDE。
 
-## Recommended IDE Setup
+## 特性
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+- 🎨 **玻璃拟态 UI** - 现代化的毛玻璃效果界面设计
+- 📝 **Monaco Editor** - VS Code 同款代码编辑器，支持语法高亮
+- 💻 **真实终端** - 集成 PowerShell/Bash 终端，基于 node-pty
+- 📁 **文件管理** - 项目文件浏览和管理
+- 🪟 **无边框窗口** - 自定义标题栏，原生窗口控制
 
-## Project Setup
+## 技术栈
 
-### Install
+- **Electron** - 跨平台桌面应用框架
+- **React 19** - 用户界面库
+- **TypeScript** - 类型安全的 JavaScript
+- **Vite** - 快速的构建工具
+- **Tailwind CSS** - 原子化 CSS 框架
+- **Monaco Editor** - 代码编辑器
+- **xterm.js** - 终端模拟器
+- **node-pty** - 伪终端
+
+## 开发
+
+### 环境要求
+
+- Node.js 18+
+- npm 或 pnpm
+
+### 安装依赖
 
 ```bash
-$ npm install
+npm install
 ```
 
-### Development
+### 启动开发服务器
 
 ```bash
-$ npm run dev
+npm run dev
 ```
 
-### Build
+### 构建
 
 ```bash
-# For windows
-$ npm run build:win
+# Windows
+npm run build:win
 
-# For macOS
-$ npm run build:mac
+# macOS
+npm run build:mac
 
-# For Linux
-$ npm run build:linux
+# Linux
+npm run build:linux
 ```
+
+构建产物位于 `dist` 目录。
+
+## 项目结构
+
+```
+ging/
+├── src/
+│   ├── main/           # Electron 主进程
+│   ├── preload/        # 预加载脚本
+│   └── renderer/       # React 渲染进程
+│       └── src/
+│           ├── components/  # React 组件
+│           └── assets/      # 静态资源
+├── resources/          # 应用图标等资源
+├── build/              # 构建配置
+└── dist/               # 构建输出
+```
+
+## 许可证
+
+MIT
