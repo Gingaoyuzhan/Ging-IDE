@@ -49,11 +49,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
         setAiConfig(result.data)
       }
     })
-    // Load saved theme
-    const savedTheme = (localStorage.getItem('Ging-IDE-theme') as Theme) || 'amber'
-    setTheme(savedTheme)
-    setPendingTheme(savedTheme)
-    document.documentElement.setAttribute('data-theme', savedTheme)
+    // Sync theme state with current applied theme
+    const currentTheme = document.documentElement.getAttribute('data-theme') as Theme
+    if (currentTheme) {
+      setTheme(currentTheme)
+      setPendingTheme(currentTheme)
+    }
   }, [])
 
   const handleSave = async () => {
