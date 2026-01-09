@@ -4,11 +4,12 @@ import {
   FileCode,
   ChevronRight,
   ChevronDown,
-  MoreHorizontal,
   FolderOpen,
   FileJson,
   FileText,
-  File
+  File,
+  X,
+  Search
 } from 'lucide-react'
 
 interface FileEntry {
@@ -25,61 +26,67 @@ interface FileNode extends FileEntry {
 }
 
 const getFileIcon = (ext: string | null) => {
-  if (!ext) return <File size={14} className="text-gray-400" />
+  if (!ext) return <File size={14} className="text-text-muted" />
   const e = ext.toLowerCase()
-  if (['.tsx', '.ts', '.jsx', '.js'].includes(e))
-    return <FileCode size={14} className="text-blue-400" />
-  if (['.json'].includes(e)) return <FileJson size={14} className="text-yellow-400" />
-  if (['.md', '.txt'].includes(e)) return <FileText size={14} className="text-gray-400" />
-  return <File size={14} className="text-gray-400" />
+  if (['.tsx', '.ts'].includes(e)) return <FileCode size={14} className="text-blue-400" />
+  if (['.jsx', '.js'].includes(e)) return <FileCode size={14} className="text-yellow-400" />
+  if (['.json'].includes(e)) return <FileJson size={14} className="text-amber-400" />
+  if (['.md', '.txt'].includes(e)) return <FileText size={14} className="text-text-muted" />
+  if (['.py'].includes(e)) return <FileCode size={14} className="text-green-400" />
+  if (['.rs'].includes(e)) return <FileCode size={14} className="text-orange-400" />
+  return <File size={14} className="text-text-muted" />
 }
 
-const FileTreeItem: React.FC<{
+interface FileTreeItemProps {
   node: FileNode
   depth: number
   active: boolean
   onClick: () => void
   onToggle: () => void
-}> = ({ node, depth, active, onClick, onToggle }) => {
+}
+
+const FileTreeItem: React.FC<FileTreeItemProps> = ({ node, depth, active, onClick, onToggle }) => {
   return (
     <div
-      className={`group flex items-center gap-1.5 py-1.5 px-2 rounded-lg cursor-pointer transition-all duration-200 ${active
-          ? 'bg-accent-primary/20 text-white shadow-sm'
-          : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
-        }`}
-      style={{ paddingLeft: `${depth * 12 + 8}px` }}
-      onClick={() => {
-        if (node.isDirectory) {
-          onToggle()
-        } else {
-          onClick()
+      className={`
+        group flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer transition-all duration-200
+        ${active
+          ? 'bg-accent-primary/15 text-accent-primary'
+          : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]'
         }
-      }}
+      `}
+      style={{ paddingLeft: `${depth * 12 + 8}px` }}
+      onClick={() => (node.isDirectory ? onToggle() : onClick())}
     >
-      <span className="opacity-70 group-hover:opacity-100 transition-opacity">
+      {/* Chevron */}
+      <span className="w-4 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
         {node.isDirectory ? (
           node.isOpen ? (
             <ChevronDown size={14} />
           ) : (
             <ChevronRight size={14} />
           )
-        ) : (
-          <div className="w-3.5" />
-        )}
+        ) : null}
       </span>
 
+      {/* Icon */}
       {node.isDirectory ? (
         node.isOpen ? (
-          <FolderOpen size={14} className="text-accent-secondary" />
+          <FolderOpen size={14} className="text-accent-primary flex-shrink-0" />
         ) : (
-          <Folder size={14} className="text-gray-500" />
+          <Folder size={14} className="text-text-muted flex-shrink-0" />
         )
       ) : (
-        getFileIcon(node.ext)
+        <span className="flex-shrink-0">{getFileIcon(node.ext)}</span>
       )}
 
-      <span className="text-sm font-medium tracking-wide truncate">{node.name}</span>
-      {node.isLoading && <span className="text-xs text-gray-500 ml-auto">...</span>}
+      {/* Name */}
+      <span className="text-sm font-medium truncate">{node.name}</span>
+
+      {/* Loading indicator */}
+      {node.isLoading && (
+        <span className="ml-auto text-[10px] text-text-muted animate-pulse">...</span>
+      )}
     </div>
   )
 }
@@ -132,7 +139,6 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
         if (i === path[pathIndex]) {
           if (pathIndex === path.length - 1) {
             if (!n.isOpen && !n.children) {
-              // 需要加载子目录
               loadChildren(n, path)
               return { ...n, isLoading: true }
             }
@@ -188,7 +194,12 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
             onToggle={() => toggleFolder(node, currentPath)}
           />
           {node.isDirectory && node.isOpen && node.children && (
-            <div className="border-l border-white/5 ml-4">
+            <div className="relative">
+              {/* Indent guide line */}
+              <div
+                className="absolute top-0 bottom-0 w-px bg-border"
+                style={{ left: `${depth * 12 + 20}px` }}
+              />
               {renderTree(node.children, depth + 1, currentPath)}
             </div>
           )}
@@ -199,46 +210,57 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
 
   if (!isOpen) return null
 
+  const projectName = rootPath?.split(/[/\\]/).pop() || 'Project'
+
   return (
-    <div className="w-64 h-full glass-panel flex flex-col border-r border-glass-border animate-in slide-in-from-left-5 fade-in duration-300">
-      <div className="p-4 border-b border-glass-border flex justify-between items-center bg-white/5">
-        <span className="text-xs font-bold text-gray-300 tracking-wider uppercase">
-          Project Explorer
-        </span>
-        <div
-          onClick={onClose}
-          className="cursor-pointer hover:bg-white/10 p-1 rounded transition-colors"
-        >
-          <MoreHorizontal size={14} className="text-gray-500 hover:text-white" />
+    <div className="w-60 h-full glass-panel flex flex-col rounded-2xl overflow-hidden animate-fade-in-up">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-white/[0.02]">
+        <div className="flex items-center gap-2 min-w-0">
+          <Folder size={14} className="text-accent-primary flex-shrink-0" />
+          <span className="text-sm font-semibold text-text-primary truncate">{projectName}</span>
         </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-secondary transition-colors"
+        >
+          <X size={14} />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+      {/* File Tree */}
+      <div className="flex-1 overflow-y-auto p-2">
         {!rootPath ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-4">
-            <Folder size={32} className="text-gray-500 mb-3" />
-            <p className="text-sm text-gray-400 mb-4">没有打开的项目</p>
+            <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-4">
+              <Folder size={24} className="text-text-muted" />
+            </div>
+            <p className="text-sm text-text-muted mb-4">No project open</p>
             <button
               onClick={onOpenFolder}
-              className="px-4 py-2 bg-accent-primary/20 hover:bg-accent-primary/30 text-white text-sm rounded-lg transition-colors"
+              className="px-4 py-2 bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary text-sm font-medium rounded-lg transition-colors"
             >
-              打开文件夹
+              Open Folder
             </button>
           </div>
         ) : loading ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-gray-400 text-sm">加载中...</span>
+            <span className="text-text-muted text-sm animate-pulse">Loading...</span>
           </div>
         ) : (
-          renderTree(files)
+          <div className="space-y-0.5">{renderTree(files)}</div>
         )}
       </div>
 
-      <div className="p-3 border-t border-glass-border bg-black/20 text-[10px] text-gray-500 flex justify-between">
-        <span className="truncate max-w-[150px]">{rootPath || 'ging-v1.0.0'}</span>
-        <span className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Ready
+      {/* Footer */}
+      <div className="px-4 py-2 border-t border-border bg-black/20 flex items-center justify-between">
+        <span className="text-[10px] text-text-muted font-mono truncate max-w-[140px]">
+          {rootPath || 'No project'}
         </span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-mint animate-pulse" />
+          <span className="text-[10px] text-text-muted">Ready</span>
+        </div>
       </div>
     </div>
   )

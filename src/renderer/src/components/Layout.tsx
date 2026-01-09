@@ -1,5 +1,4 @@
 import React from 'react'
-import { Minus, Square, X } from 'lucide-react'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -7,55 +6,38 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, dock }) => {
-  const handleMinimize = () => window.electron.ipcRenderer.send('window:minimize')
-  const handleMaximize = () => window.electron.ipcRenderer.send('window:maximize')
-  const handleClose = () => window.electron.ipcRenderer.send('window:close')
-
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden rounded-xl border border-glass-border bg-glass-bg">
-      {/* 标题栏 - 可拖拽 */}
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-bg-deep">
+      {/* macOS Style Title Bar - Native traffic lights on left */}
       <div
-        className="flex items-center justify-between h-10 px-4 border-b border-glass-border flex-shrink-0"
+        className="flex items-center h-12 px-4 border-b border-border flex-shrink-0 bg-bg-surface/50"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
-            <span className="font-bold text-white text-xs">G</span>
+        {/* Spacer for native traffic lights (macOS) */}
+        <div className="w-[72px] flex-shrink-0" />
+
+        {/* Centered Title */}
+        <div className="flex-1 flex items-center justify-center gap-2">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-accent-primary/30 rounded-md blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative w-5 h-5 rounded-md bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
+              <span className="font-display font-bold text-black text-[10px]">G</span>
+            </div>
           </div>
-          <span className="text-sm font-medium text-gray-400">Ging IDE</span>
+          <span className="font-display text-sm font-medium text-text-secondary">Ging</span>
         </div>
-        <div
-          className="flex items-center gap-1"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
-          <button
-            onClick={handleMinimize}
-            className="p-2 hover:bg-white/10 rounded transition-colors text-gray-400 hover:text-white"
-          >
-            <Minus size={14} />
-          </button>
-          <button
-            onClick={handleMaximize}
-            className="p-2 hover:bg-white/10 rounded transition-colors text-gray-400 hover:text-white"
-          >
-            <Square size={12} />
-          </button>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-red-500/80 rounded transition-colors text-gray-400 hover:text-white"
-          >
-            <X size={14} />
-          </button>
-        </div>
+
+        {/* Spacer for symmetry */}
+        <div className="w-[72px] flex-shrink-0" />
       </div>
 
-      {/* 主内容区 */}
-      <div className="flex-1 flex overflow-hidden p-4 gap-4">
-        {/* Dock Area */}
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden p-3 gap-3">
+        {/* Dock */}
         <div className="flex-none z-50">{dock}</div>
 
-        {/* Main Content Area */}
-        <main className="flex-1 flex min-w-0 z-10 gap-6">{children}</main>
+        {/* Content */}
+        <main className="flex-1 flex min-w-0 z-10 gap-3">{children}</main>
       </div>
     </div>
   )

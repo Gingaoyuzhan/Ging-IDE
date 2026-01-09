@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import Editor, { useMonaco, OnMount } from '@monaco-editor/react'
-import { Save } from 'lucide-react'
+import { Save, X, Circle } from 'lucide-react'
 import type * as Monaco from 'monaco-editor'
 
 interface CodeEditorProps {
@@ -42,14 +42,14 @@ const getLanguageFromPath = (path: string): string => {
 
 const defaultContent = `import React from 'react';
 
-// 欢迎来到 Ging
-// 一个为你打造的创意编程空间。
+// Welcome to Ging IDE
+// A creative coding space built for you.
 
 function App() {
   return (
     <div className="container">
-       <h1>你好，世界！</h1>
-       <p>在这里开始你的创造...</p>
+       <h1>Hello, World!</h1>
+       <p>Start creating here...</p>
     </div>
   );
 }
@@ -69,31 +69,37 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
 
   useEffect(() => {
     if (monaco) {
-      monaco.editor.defineTheme('cursor-dark', {
+      // Phosphor Terminal Theme
+      monaco.editor.defineTheme('phosphor-dark', {
         base: 'vs-dark',
         inherit: true,
         rules: [
-          { token: 'comment', foreground: '6A9955' },
-          { token: 'keyword', foreground: '569CD6' },
-          { token: 'identifier', foreground: '9CDCFE' },
-          { token: 'string', foreground: 'CE9178' },
-          { token: 'number', foreground: 'B5CEA8' },
-          { token: 'type', foreground: '4EC9B0' }
+          { token: 'comment', foreground: '6b7280', fontStyle: 'italic' },
+          { token: 'keyword', foreground: 'f59e0b' },
+          { token: 'identifier', foreground: 'e5e7eb' },
+          { token: 'string', foreground: '10b981' },
+          { token: 'number', foreground: 'fbbf24' },
+          { token: 'type', foreground: '60a5fa' },
+          { token: 'function', foreground: 'f472b6' },
+          { token: 'variable', foreground: 'e5e7eb' },
+          { token: 'constant', foreground: 'fbbf24' }
         ],
         colors: {
-          'editor.background': '#1e1e1e00',
-          'editor.foreground': '#d4d4d4',
+          'editor.background': '#00000000',
+          'editor.foreground': '#e5e7eb',
           'editor.lineHighlightBackground': '#ffffff08',
-          'editorCursor.foreground': '#ffffff',
-          'editorWhitespace.foreground': '#3e3e42',
-          'editorIndentGuide.background': '#404040',
-          'editorIndentGuide.activeBackground': '#707070'
+          'editor.selectionBackground': '#f59e0b30',
+          'editorCursor.foreground': '#f59e0b',
+          'editorWhitespace.foreground': '#374151',
+          'editorIndentGuide.background': '#27272a',
+          'editorIndentGuide.activeBackground': '#3f3f46',
+          'editorLineNumber.foreground': '#52525b',
+          'editorLineNumber.activeForeground': '#a1a1aa'
         }
       })
     }
   }, [monaco])
 
-  // 加载文件
   useEffect(() => {
     const loadFile = async () => {
       if (!filePath) {
@@ -109,7 +115,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
         return
       }
 
-      // 避免重复加载同一文件
       if (currentFileRef.current === filePath) {
         return
       }
@@ -124,9 +129,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
           setContent(fileContent)
           setOriginalContent(fileContent)
           setHasChanges(false)
-          // 存储待设置的内容
           pendingContentRef.current = fileContent
-          // 直接设置编辑器内容
           if (editorRef.current) {
             editorRef.current.setValue(fileContent)
             pendingContentRef.current = null
@@ -167,14 +170,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
 
   const handleEditorMount: OnMount = (editor) => {
     editorRef.current = editor
-    // 如果有待设置的内容，设置到编辑器
     if (pendingContentRef.current !== null) {
       editor.setValue(pendingContentRef.current)
       pendingContentRef.current = null
     }
   }
 
-  // Ctrl+S 保存
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -186,48 +187,57 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleSave])
 
-  const fileName = filePath ? filePath.split(/[/\\]/).pop() : '未命名'
+  const fileName = filePath ? filePath.split(/[/\\]/).pop() : 'Untitled'
   const language = filePath ? getLanguageFromPath(filePath) : 'typescript'
 
   return (
-    <div className="h-full w-full flex flex-col">
-      {/* Glass Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-glass-border flex-shrink-0">
+    <div className="h-full w-full flex flex-col glass-panel rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-white/[0.02] flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex gap-1.5">
-            <div
-              className="w-3 h-3 rounded-full bg-red-500/80 cursor-pointer hover:bg-red-500"
-              onClick={onClose}
-            />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div
-              className={`w-3 h-3 rounded-full ${hasChanges ? 'bg-blue-500/80' : 'bg-green-500/80'}`}
-            />
+          {/* File Tab */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+            <span className="text-sm font-medium text-text-primary">{fileName}</span>
+            {hasChanges && <Circle size={8} className="fill-accent-primary text-accent-primary" />}
           </div>
-          <span className="text-sm font-medium text-gray-300 ml-4 font-sans tracking-wide flex items-center gap-2">
-            {fileName}
-            {hasChanges && <span className="text-xs text-yellow-400">●</span>}
-          </span>
         </div>
+
         <div className="flex items-center gap-2">
+          {/* Language Badge */}
+          <span className="text-[10px] font-mono text-text-muted uppercase px-2 py-1 bg-white/5 rounded">
+            {language}
+          </span>
+
+          {/* Save Button */}
           {hasChanges && (
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-accent-primary/20 hover:bg-accent-primary/30 text-white rounded transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
             >
               <Save size={12} />
-              {saving ? '保存中...' : '保存'}
+              {saving ? 'Saving...' : 'Save'}
             </button>
           )}
-          <div className="text-xs text-gray-500">{language}</div>
+
+          {/* Close Button */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-secondary transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Editor Container */}
+      {/* Editor */}
       <div className="flex-1 relative overflow-hidden min-h-0">
         {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-400">加载中...</div>
+          <div className="flex items-center justify-center h-full">
+            <span className="text-text-muted animate-pulse">Loading...</span>
+          </div>
         ) : (
           <Editor
             key={filePath || 'default'}
@@ -236,21 +246,29 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
             defaultValue={content}
             onChange={handleEditorChange}
             onMount={handleEditorMount}
-            theme="cursor-dark"
+            theme="phosphor-dark"
             options={{
               minimap: { enabled: false },
-              fontSize: 15,
-              lineHeight: 24,
+              fontSize: 14,
+              lineHeight: 22,
               fontFamily: "'JetBrains Mono', 'Menlo', 'Monaco', 'Consolas', monospace",
-              padding: { top: 24, bottom: 24 },
+              fontLigatures: true,
+              padding: { top: 20, bottom: 20 },
               scrollBeyondLastLine: false,
               smoothScrolling: true,
               cursorBlinking: 'smooth',
               cursorSmoothCaretAnimation: 'on',
-              renderLineHighlight: 'all',
+              cursorStyle: 'line',
+              cursorWidth: 2,
+              renderLineHighlight: 'line',
               contextmenu: true,
               roundedSelection: true,
-              automaticLayout: true
+              automaticLayout: true,
+              bracketPairColorization: { enabled: true },
+              guides: {
+                indentation: true,
+                bracketPairs: true
+              }
             }}
           />
         )}

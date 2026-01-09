@@ -5,7 +5,7 @@ import ProjectDrawer from './components/ProjectDrawer'
 import NavigationDock from './components/NavigationDock'
 import WelcomeScreen from './components/WelcomeScreen'
 import { useState, useRef } from 'react'
-import { TerminalSquare } from 'lucide-react'
+import { Terminal as TerminalIcon, X } from 'lucide-react'
 
 function App() {
   const [activeView, setActiveView] = useState('welcome')
@@ -31,25 +31,32 @@ function App() {
   }
 
   const handleRun = async () => {
+    if (!projectPath) {
+      // 没有打开项目，先打开文件夹
+      await handleOpenFolder()
+      return
+    }
+
     setShowTerminal(true)
 
     setTimeout(async () => {
       terminalRef.current?.focus()
 
-      if (!projectPath) return
-
       // 检测项目类型并运行
-      const packageJson = await window.api.fs.exists(`${projectPath}\\package.json`)
-      const cargoToml = await window.api.fs.exists(`${projectPath}\\Cargo.toml`)
-      const goMod = await window.api.fs.exists(`${projectPath}\\go.mod`)
-      const requirements = await window.api.fs.exists(`${projectPath}\\requirements.txt`)
-      const pomXml = await window.api.fs.exists(`${projectPath}\\pom.xml`)
+      const packageJson = await window.api.fs.exists(`${projectPath}/package.json`)
+      const cargoToml = await window.api.fs.exists(`${projectPath}/Cargo.toml`)
+      const goMod = await window.api.fs.exists(`${projectPath}/go.mod`)
+      const requirements = await window.api.fs.exists(`${projectPath}/requirements.txt`)
+      const pomXml = await window.api.fs.exists(`${projectPath}/pom.xml`)
+      const mainPy = await window.api.fs.exists(`${projectPath}/main.py`)
+      const appPy = await window.api.fs.exists(`${projectPath}/app.py`)
+      const managePy = await window.api.fs.exists(`${projectPath}/manage.py`)
 
       let cmd = ''
 
       if (packageJson.data) {
-        // Node.js 项目 - 尝试读取 package.json 获取脚本
-        const content = await window.api.fs.readFile(`${projectPath}\\package.json`)
+        // Node.js 项目
+        const content = await window.api.fs.readFile(`${projectPath}/package.json`)
         if (content.success && content.data) {
           try {
             const pkg = JSON.parse(content.data)
@@ -70,6 +77,14 @@ function App() {
         cmd = 'cargo run'
       } else if (goMod.data) {
         cmd = 'go run .'
+      } else if (managePy.data) {
+        // Django 项目
+        cmd = 'python manage.py runserver'
+      } else if (appPy.data) {
+        // Flask 项目
+        cmd = 'python app.py'
+      } else if (mainPy.data) {
+        cmd = 'python main.py'
       } else if (requirements.data) {
         cmd = 'python main.py'
       } else if (pomXml.data) {
@@ -78,6 +93,9 @@ function App() {
 
       if (cmd) {
         terminalRef.current?.runCommand(cmd)
+      } else {
+        // 没有检测到项目类型，提示用户
+        terminalRef.current?.runCommand('echo "未检测到可运行的项目类型"')
       }
     }, 200)
   }
@@ -103,7 +121,7 @@ function App() {
         />
       }
     >
-      {/* Project Drawer - Slide in */}
+      {/* Project Drawer */}
       <ProjectDrawer
         isOpen={showFiles}
         onClose={() => setShowFiles(false)}
@@ -114,12 +132,11 @@ function App() {
       />
 
       {/* Editor Area */}
-      <div className="flex-1 h-full flex flex-col min-w-0 glass-panel rounded-2xl overflow-hidden relative transition-all duration-500">
+      <div className="flex-1 h-full flex flex-col min-w-0 relative">
         {activeView === 'welcome' ? (
-          <WelcomeScreen
-            onNewProject={() => setActiveView('editor')}
-            onOpenFolder={handleOpenFolder}
-          />
+          <div className="h-full glass-panel rounded-2xl overflow-hidden">
+            <WelcomeScreen onNewProject={() => setActiveView('editor')} onOpenFolder={handleOpenFolder} />
+          </div>
         ) : (
           <CodeEditor
             filePath={activeFile}
@@ -131,25 +148,32 @@ function App() {
         )}
       </div>
 
-      {/* Right Panel - Terminal */}
+      {/* Terminal Panel */}
       {showTerminal && (
-        <div className="w-[400px] h-full flex-none glass-panel rounded-2xl overflow-hidden transition-all duration-500 animate-in slide-in-from-right-10 fade-in flex flex-col">
-          {/* 面板标题栏 */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-glass-border bg-white/5 flex-shrink-0">
+        <div className="w-[380px] h-full flex-none glass-panel rounded-2xl overflow-hidden flex flex-col animate-fade-in-up">
+          {/* Terminal Header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-white/[0.02] flex-shrink-0">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-cyan-500/20">
-                <TerminalSquare size={16} className="text-green-400" />
+              <div className="p-1.5 rounded-lg bg-mint/20">
+                <TerminalIcon size={14} className="text-mint" />
               </div>
-              <span className="text-sm font-semibold text-white">终端</span>
-              <span className="text-xs text-gray-500 ml-1">PowerShell</span>
+              <span className="text-sm font-medium text-text-primary">Terminal</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs text-gray-500">运行中</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-mint animate-pulse" />
+                <span className="text-[10px] text-text-muted">Active</span>
+              </div>
+              <button
+                onClick={() => setShowTerminal(false)}
+                className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-secondary transition-colors"
+              >
+                <X size={14} />
+              </button>
             </div>
           </div>
 
-          {/* 面板内容 */}
+          {/* Terminal Content */}
           <div className="flex-1 overflow-hidden">
             <Terminal ref={terminalRef} cwd={projectPath || undefined} />
           </div>

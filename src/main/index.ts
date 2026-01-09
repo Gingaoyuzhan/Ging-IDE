@@ -18,8 +18,10 @@ function createWindow(): void {
     autoHideMenuBar: true,
     frame: false,
     transparent: true,
-    titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 16, y: 16 },
+    titleBarStyle: 'hiddenInset',
+    vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+    visualEffectState: 'active',
+    trafficLightPosition: { x: 16, y: 18 },
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -201,9 +203,15 @@ app.whenReady().then(() => {
   // 创建终端
   ipcMain.handle('terminal:create', (_, id: string, cwd?: string) => {
     try {
-      const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash'
+      // macOS 使用 zsh，Windows 使用 powershell，Linux 使用 bash
+      const shell =
+        process.platform === 'win32'
+          ? 'powershell.exe'
+          : process.platform === 'darwin'
+            ? 'zsh'
+            : 'bash'
       const term = pty.spawn(shell, [], {
-        name: 'xterm-color',
+        name: 'xterm-256color',
         cols: 80,
         rows: 24,
         cwd: cwd || app.getPath('home'),
