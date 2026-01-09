@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Folder,
   FileCode,
@@ -9,7 +9,11 @@ import {
   FileText,
   File,
   X,
-  Search
+  FilePlus,
+  FolderPlus,
+  Pencil,
+  Trash2,
+  GitBranch
 } from 'lucide-react'
 
 interface FileEntry {
@@ -23,6 +27,15 @@ interface FileNode extends FileEntry {
   isOpen?: boolean
   children?: FileNode[]
   isLoading?: boolean
+}
+
+interface GitStatus {
+  branch: string | null
+  modified: string[]
+  created: string[]
+  deleted: string[]
+  not_added: string[]
+  staged: string[]
 }
 
 const getFileIcon = (ext: string | null) => {
@@ -41,11 +54,20 @@ interface FileTreeItemProps {
   node: FileNode
   depth: number
   active: boolean
+  gitStatus?: 'modified' | 'added' | 'deleted' | 'untracked' | null
   onClick: () => void
   onToggle: () => void
+  onContextMenu: (e: React.MouseEvent) => void
 }
 
-const FileTreeItem: React.FC<FileTreeItemProps> = ({ node, depth, active, onClick, onToggle }) => {
+const gitStatusColors = {
+  modified: 'text-yellow-400',
+  added: 'text-green-400',
+  deleted: 'text-rose',
+  untracked: 'text-text-muted'
+}
+
+const FileTreeItem: React.FC<FileTreeItemProps> = ({ node, depth, active, gitStatus, onClick, onToggle, onContextMenu }) => {
   return (
     <div
       className={`
@@ -57,6 +79,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ node, depth, active, onClic
       `}
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
       onClick={() => (node.isDirectory ? onToggle() : onClick())}
+      onContextMenu={onContextMenu}
     >
       {/* Chevron */}
       <span className="w-4 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
@@ -81,7 +104,16 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ node, depth, active, onClic
       )}
 
       {/* Name */}
-      <span className="text-sm font-medium truncate">{node.name}</span>
+      <span className={`text-sm font-medium truncate ${gitStatus ? gitStatusColors[gitStatus] : ''}`}>
+        {node.name}
+      </span>
+
+      {/* Git status indicator */}
+      {gitStatus && (
+        <span className={`ml-auto text-[10px] font-bold ${gitStatusColors[gitStatus]}`}>
+          {gitStatus === 'modified' ? 'M' : gitStatus === 'added' ? 'A' : gitStatus === 'deleted' ? 'D' : '?'}
+        </span>
+      )}
 
       {/* Loading indicator */}
       {node.isLoading && (
@@ -110,14 +142,39 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
 }) => {
   const [files, setFiles] = useState<FileNode[]>([])
   const [loading, setLoading] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode | null } | null>(null)
+  const [inputModal, setInputModal] = useState<{ type: 'file' | 'folder' | 'rename'; parentPath: string; oldName?: string } | null>(null)
+  const [inputValue, setInputValue] = useState('')
+  const [gitStatus, setGitStatus] = useState<GitStatus | null>(null)
 
   useEffect(() => {
     if (rootPath) {
       loadDirectory(rootPath)
+      loadGitStatus(rootPath)
     } else {
       setFiles([])
+      setGitStatus(null)
     }
   }, [rootPath])
+
+  const loadGitStatus = async (path: string) => {
+    const result = await window.api.git.status(path)
+    if (result.success && result.data) {
+      setGitStatus(result.data)
+    } else {
+      setGitStatus(null)
+    }
+  }
+
+  const getFileGitStatus = (filePath: string): 'modified' | 'added' | 'deleted' | 'untracked' | null => {
+    if (!gitStatus || !rootPath) return null
+    const relativePath = filePath.replace(rootPath + '/', '')
+    if (gitStatus.modified.includes(relativePath)) return 'modified'
+    if (gitStatus.created.includes(relativePath) || gitStatus.staged.includes(relativePath)) return 'added'
+    if (gitStatus.deleted.includes(relativePath)) return 'deleted'
+    if (gitStatus.not_added.includes(relativePath)) return 'untracked'
+    return null
+  }
 
   const loadDirectory = async (path: string) => {
     setLoading(true)
@@ -181,6 +238,72 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
     }
   }
 
+  const handleContextMenu = useCallback((e: React.MouseEvent, node: FileNode) => {
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY, node })
+  }, [])
+
+  const closeContextMenu = useCallback(() => setContextMenu(null), [])
+
+  const handleNewFile = async () => {
+    if (!contextMenu?.node) return
+    const parentPath = contextMenu.node.isDirectory ? contextMenu.node.path : contextMenu.node.path.replace(/[/\\][^/\\]+$/, '')
+    setInputModal({ type: 'file', parentPath })
+    setInputValue('')
+    closeContextMenu()
+  }
+
+  const handleNewFolder = async () => {
+    if (!contextMenu?.node) return
+    const parentPath = contextMenu.node.isDirectory ? contextMenu.node.path : contextMenu.node.path.replace(/[/\\][^/\\]+$/, '')
+    setInputModal({ type: 'folder', parentPath })
+    setInputValue('')
+    closeContextMenu()
+  }
+
+  const handleRename = () => {
+    if (!contextMenu?.node) return
+    const parentPath = contextMenu.node.path.replace(/[/\\][^/\\]+$/, '')
+    setInputModal({ type: 'rename', parentPath, oldName: contextMenu.node.name })
+    setInputValue(contextMenu.node.name)
+    closeContextMenu()
+  }
+
+  const handleDelete = async () => {
+    if (!contextMenu?.node) return
+    const confirmed = window.confirm(`确定删除 "${contextMenu.node.name}" 吗？`)
+    if (confirmed) {
+      await window.api.fs.delete(contextMenu.node.path)
+      if (rootPath) loadDirectory(rootPath)
+    }
+    closeContextMenu()
+  }
+
+  const handleInputSubmit = async () => {
+    if (!inputModal || !inputValue.trim()) return
+    const newPath = `${inputModal.parentPath}/${inputValue.trim()}`
+    if (inputModal.type === 'file') {
+      await window.api.fs.createFile(newPath)
+    } else if (inputModal.type === 'folder') {
+      await window.api.fs.createDir(newPath)
+    } else if (inputModal.type === 'rename' && inputModal.oldName) {
+      const oldPath = `${inputModal.parentPath}/${inputModal.oldName}`
+      await window.api.fs.rename(oldPath, newPath)
+    }
+    setInputModal(null)
+    if (rootPath) loadDirectory(rootPath)
+  }
+
+  // Close context menu on click outside
+  useEffect(() => {
+    if (contextMenu) {
+      const handler = () => closeContextMenu()
+      window.addEventListener('click', handler)
+      return () => window.removeEventListener('click', handler)
+    }
+    return undefined
+  }, [contextMenu, closeContextMenu])
+
   const renderTree = (nodes: FileNode[], depth = 0, path: number[] = []) => {
     return nodes.map((node, i) => {
       const currentPath = [...path, i]
@@ -190,8 +313,10 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
             node={node}
             depth={depth}
             active={activeFile === node.path}
+            gitStatus={getFileGitStatus(node.path)}
             onClick={() => onFileSelect(node.path)}
             onToggle={() => toggleFolder(node, currentPath)}
+            onContextMenu={(e) => handleContextMenu(e, node)}
           />
           {node.isDirectory && node.isOpen && node.children && (
             <div className="relative">
@@ -254,14 +379,71 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
 
       {/* Footer */}
       <div className="px-4 py-2 border-t border-border bg-black/20 flex items-center justify-between">
-        <span className="text-[10px] text-text-muted font-mono truncate max-w-[140px]">
-          {rootPath || 'No project'}
-        </span>
+        {gitStatus?.branch ? (
+          <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+            <GitBranch size={12} />
+            <span className="font-mono truncate max-w-[100px]">{gitStatus.branch}</span>
+          </div>
+        ) : (
+          <span className="text-[10px] text-text-muted font-mono truncate max-w-[140px]">
+            {rootPath ? 'No Git' : 'No project'}
+          </span>
+        )}
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-mint animate-pulse" />
           <span className="text-[10px] text-text-muted">Ready</span>
         </div>
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed glass-panel-elevated rounded-lg py-1 z-50 min-w-[140px] shadow-xl"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button onClick={handleNewFile} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary">
+            <FilePlus size={14} /> 新建文件
+          </button>
+          <button onClick={handleNewFolder} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary">
+            <FolderPlus size={14} /> 新建文件夹
+          </button>
+          <div className="h-px bg-border my-1" />
+          <button onClick={handleRename} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary">
+            <Pencil size={14} /> 重命名
+          </button>
+          <button onClick={handleDelete} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose hover:bg-rose/10">
+            <Trash2 size={14} /> 删除
+          </button>
+        </div>
+      )}
+
+      {/* Input Modal */}
+      {inputModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setInputModal(null)}>
+          <div className="glass-panel-elevated rounded-xl p-4 w-72" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">
+              {inputModal.type === 'file' ? '新建文件' : inputModal.type === 'folder' ? '新建文件夹' : '重命名'}
+            </h3>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleInputSubmit()}
+              autoFocus
+              className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary"
+              placeholder={inputModal.type === 'rename' ? '新名称' : '名称'}
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button onClick={() => setInputModal(null)} className="px-3 py-1.5 text-sm text-text-muted hover:text-text-secondary">
+                取消
+              </button>
+              <button onClick={handleInputSubmit} className="px-3 py-1.5 bg-accent-primary/20 text-accent-primary text-sm rounded-lg hover:bg-accent-primary/30">
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

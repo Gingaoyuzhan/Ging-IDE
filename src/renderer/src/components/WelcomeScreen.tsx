@@ -1,12 +1,27 @@
-import React from 'react'
-import { Plus, FolderOpen, Github, ArrowRight, Zap, Clock } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { Plus, FolderOpen, Github, ArrowRight, Clock } from 'lucide-react'
+
+interface RecentProject {
+  path: string
+  name: string
+}
 
 interface WelcomeScreenProps {
   onNewProject: () => void
   onOpenFolder?: () => void
+  onOpenProject?: (path: string) => void
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNewProject, onOpenFolder }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNewProject, onOpenFolder, onOpenProject }) => {
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([])
+
+  useEffect(() => {
+    window.api.store.getRecentProjects().then((result) => {
+      if (result.success && result.data) {
+        setRecentProjects(result.data)
+      }
+    })
+  }, [])
   return (
     <div className="h-full w-full flex flex-col items-center justify-center p-8 relative overflow-hidden">
       {/* Ambient Background Glow */}
@@ -71,31 +86,24 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNewProject, onOpenFolde
                 Recent
               </span>
             </div>
-            <button className="text-xs text-accent-primary hover:text-accent-secondary transition-colors font-medium">
-              View All
-            </button>
           </div>
 
           {/* Project List */}
           <div className="divide-y divide-border">
-            <RecentProjectItem
-              name="ging-ui-redesign"
-              path="~/projects/ging"
-              time="2h ago"
-              type="ts"
-            />
-            <RecentProjectItem
-              name="ai-agent-core"
-              path="~/projects/ai-agent"
-              time="Yesterday"
-              type="py"
-            />
-            <RecentProjectItem
-              name="portfolio-2026"
-              path="~/projects/web"
-              time="3 days"
-              type="tsx"
-            />
+            {recentProjects.length > 0 ? (
+              recentProjects.slice(0, 5).map((project) => (
+                <RecentProjectItem
+                  key={project.path}
+                  name={project.name}
+                  path={project.path}
+                  onClick={() => onOpenProject?.(project.path)}
+                />
+              ))
+            ) : (
+              <div className="px-5 py-6 text-center text-sm text-text-muted">
+                暂无最近项目
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -173,41 +181,32 @@ const ActionCard: React.FC<ActionCardProps> = ({ icon, title, desc, onClick, pri
 interface RecentProjectItemProps {
   name: string
   path: string
-  time: string
-  type: string
+  onClick?: () => void
 }
 
-const RecentProjectItem: React.FC<RecentProjectItemProps> = ({ name, path, time, type }) => {
-  const typeColors: Record<string, string> = {
-    ts: 'bg-blue-500/20 text-blue-400',
-    tsx: 'bg-blue-500/20 text-blue-400',
-    js: 'bg-yellow-500/20 text-yellow-400',
-    py: 'bg-green-500/20 text-green-400',
-    rs: 'bg-orange-500/20 text-orange-400'
-  }
+const RecentProjectItem: React.FC<RecentProjectItemProps> = ({ name, path, onClick }) => {
+  const shortPath = path.replace(/^\/Users\/[^/]+/, '~')
 
   return (
-    <div className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] cursor-pointer group transition-colors">
+    <div
+      onClick={onClick}
+      className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] cursor-pointer group transition-colors"
+    >
       <div className="flex items-center gap-3">
-        <div
-          className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold uppercase ${typeColors[type] || 'bg-gray-500/20 text-gray-400'}`}
-        >
-          {type}
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent-primary/20 text-accent-primary text-[10px] font-bold">
+          {name.charAt(0).toUpperCase()}
         </div>
         <div>
           <div className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">
             {name}
           </div>
-          <div className="text-xs text-text-muted">{path}</div>
+          <div className="text-xs text-text-muted truncate max-w-[200px]">{shortPath}</div>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-text-muted">{time}</span>
-        <ArrowRight
-          size={14}
-          className="text-text-muted opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-accent-primary transition-all duration-200"
-        />
-      </div>
+      <ArrowRight
+        size={14}
+        className="text-text-muted opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-accent-primary transition-all duration-200"
+      />
     </div>
   )
 }

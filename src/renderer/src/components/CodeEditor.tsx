@@ -5,7 +5,9 @@ import type * as Monaco from 'monaco-editor'
 
 interface CodeEditorProps {
   filePath: string | null
-  onClose?: () => void
+  openFiles?: string[]
+  onTabClick?: (path: string) => void
+  onTabClose?: (path: string) => void
   onSave?: () => void
 }
 
@@ -56,7 +58,7 @@ function App() {
 
 export default App;`
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, openFiles = [], onTabClick, onTabClose, onSave }) => {
   const monaco = useMonaco()
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
   const [content, setContent] = useState<string>(defaultContent)
@@ -192,14 +194,41 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
 
   return (
     <div className="h-full w-full flex flex-col glass-panel rounded-2xl overflow-hidden">
-      {/* Header */}
+      {/* Header with Tabs */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-white/[0.02] flex-shrink-0">
-        <div className="flex items-center gap-3">
-          {/* File Tab */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
-            <span className="text-sm font-medium text-text-primary">{fileName}</span>
-            {hasChanges && <Circle size={8} className="fill-accent-primary text-accent-primary" />}
-          </div>
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          {openFiles.length > 0 ? (
+            openFiles.map((file) => {
+              const name = file.split(/[/\\]/).pop() || 'Untitled'
+              const isActive = file === filePath
+              return (
+                <div
+                  key={file}
+                  onClick={() => onTabClick?.(file)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                    isActive ? 'bg-white/10 text-text-primary' : 'text-text-muted hover:bg-white/5 hover:text-text-secondary'
+                  }`}
+                >
+                  <span className="text-sm font-medium whitespace-nowrap">{name}</span>
+                  {isActive && hasChanges && <Circle size={8} className="fill-accent-primary text-accent-primary" />}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onTabClose?.(file)
+                    }}
+                    className="p-0.5 rounded hover:bg-white/10 text-text-muted hover:text-text-secondary"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )
+            })
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+              <span className="text-sm font-medium text-text-primary">{fileName}</span>
+              {hasChanges && <Circle size={8} className="fill-accent-primary text-accent-primary" />}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -217,16 +246,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ filePath, onClose, onSave }) =>
             >
               <Save size={12} />
               {saving ? 'Saving...' : 'Save'}
-            </button>
-          )}
-
-          {/* Close Button */}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-white/5 text-text-muted hover:text-text-secondary transition-colors"
-            >
-              <X size={14} />
             </button>
           )}
         </div>

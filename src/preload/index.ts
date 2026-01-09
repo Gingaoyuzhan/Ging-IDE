@@ -4,6 +4,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 // 文件系统API
 const fsApi = {
   readDir: (path: string) => ipcRenderer.invoke('fs:readDir', path),
+  readDirRecursive: (path: string) => ipcRenderer.invoke('fs:readDirRecursive', path),
   readFile: (path: string) => ipcRenderer.invoke('fs:readFile', path),
   writeFile: (path: string, content: string) => ipcRenderer.invoke('fs:writeFile', path, content),
   createFile: (path: string) => ipcRenderer.invoke('fs:createFile', path),
@@ -26,6 +27,7 @@ const terminalApi = {
   resize: (id: string, cols: number, rows: number) =>
     ipcRenderer.send('terminal:resize', id, cols, rows),
   destroy: (id: string) => ipcRenderer.invoke('terminal:destroy', id),
+  kill: (id: string) => ipcRenderer.invoke('terminal:kill', id),
   onData: (callback: (id: string, data: string) => void) => {
     const handler = (_: unknown, id: string, data: string) => callback(id, data)
     ipcRenderer.on('terminal:data', handler)
@@ -57,12 +59,26 @@ const aiApi = {
   }
 }
 
+// 存储API
+const storeApi = {
+  getRecentProjects: () => ipcRenderer.invoke('store:getRecentProjects'),
+  addRecentProject: (project: { path: string; name: string }) =>
+    ipcRenderer.invoke('store:addRecentProject', project)
+}
+
+// Git API
+const gitApi = {
+  status: (repoPath: string) => ipcRenderer.invoke('git:status', repoPath)
+}
+
 // 合并所有API
 const api = {
   fs: fsApi,
   dialog: dialogApi,
   terminal: terminalApi,
-  ai: aiApi
+  ai: aiApi,
+  store: storeApi,
+  git: gitApi
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

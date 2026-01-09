@@ -4,8 +4,13 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import * as fs from 'fs/promises'
 import * as pty from 'node-pty'
+import ElectronStore from 'electron-store'
+import simpleGit from 'simple-git'
 
 const terminals: Map<string, pty.IPty> = new Map()
+// Handle both ESM and CJS module formats
+const Store = (ElectronStore as { default?: typeof ElectronStore }).default || ElectronStore
+const store = new Store()
 
 function createWindow(): void {
   // Create the browser window.
@@ -111,6 +116,32 @@ app.whenReady().then(() => {
     }
   })
 
+  // 递归读取目录（用于文件搜索）
+  ipcMain.handle('fs:readDirRecursive', async (_, dirPath: string) => {
+    try {
+      const files: string[] = []
+      const ignoreDirs = new Set(['node_modules', '.git', 'dist', 'build', '.next', '__pycache__', 'target'])
+
+      const walk = async (dir: string) => {
+        const entries = await fs.readdir(dir, { withFileTypes: true })
+        for (const entry of entries) {
+          if (entry.name.startsWith('.') || ignoreDirs.has(entry.name)) continue
+          const fullPath = join(dir, entry.name)
+          if (entry.isDirectory()) {
+            await walk(fullPath)
+          } else {
+            files.push(fullPath)
+          }
+        }
+      }
+
+      await walk(dirPath)
+      return { success: true, data: files }
+    } catch (error) {
+      return { success: false, error: String(error) }
+    }
+  })
+
   // 写入文件
   ipcMain.handle('fs:writeFile', async (_, filePath: string, content: string) => {
     try {
@@ -198,6 +229,45 @@ app.whenReady().then(() => {
     return { success: true, data: result.filePaths[0] }
   })
 
+  // ========== 最近项目 ==========
+
+  ipcMain.handle('store:getRecentProjects', () => {
+    return { success: true, data: store.get('recentProjects', []) }
+  })
+
+  ipcMain.handle('store:addRecentProject', (_, project: { path: string; name: string }) => {
+    const recent = (store.get('recentProjects', []) as Array<{ path: string; name: string }>)
+    const filtered = recent.filter((p) => p.path !== project.path)
+    store.set('recentProjects', [project, ...filtered].slice(0, 10))
+    return { success: true }
+  })
+
+  // ========== Git 操作 ==========
+
+  ipcMain.handle('git:status', async (_, repoPath: string) => {
+    try {
+      const git = simpleGit(repoPath)
+      const isRepo = await git.checkIsRepo()
+      if (!isRepo) {
+        return { success: true, data: null }
+      }
+      const status = await git.status()
+      return {
+        success: true,
+        data: {
+          branch: status.current,
+          modified: status.modified,
+          created: status.created,
+          deleted: status.deleted,
+          not_added: status.not_added,
+          staged: status.staged
+        }
+      }
+    } catch {
+      return { success: true, data: null }
+    }
+  })
+
   // ========== 终端操作 ==========
 
   // 创建终端
@@ -245,6 +315,15 @@ app.whenReady().then(() => {
     if (term) {
       term.write(data)
     }
+  })
+
+  // 发送中断信号 (Ctrl+C)
+  ipcMain.handle('terminal:kill', (_, id: string) => {
+    const term = terminals.get(id)
+    if (term) {
+      term.write('\x03')
+    }
+    return { success: true }
   })
 
   // 调整终端大小
