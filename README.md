@@ -1,40 +1,68 @@
 # Ging IDE
 
-一个基于 Electron + React + TypeScript 构建的现代化桌面 IDE。
+一个轻量级、现代化的桌面代码编辑器，基于 Electron + React + TypeScript 构建。
 
-## 特性
+![Ging IDE](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-- 🎨 **玻璃拟态 UI** - 现代化的毛玻璃效果界面设计
-- 📝 **Monaco Editor** - VS Code 同款代码编辑器，支持语法高亮
-- 💻 **真实终端** - 集成 PowerShell/Bash 终端，基于 node-pty
-- 📁 **文件管理** - 项目文件浏览和管理
-- 🪟 **无边框窗口** - 自定义标题栏，原生窗口控制
+## 功能特性
+
+### 编辑器
+- Monaco Editor（VS Code 同款编辑器引擎）
+- 多标签页编辑
+- 语法高亮（支持 TypeScript、JavaScript、Python、Rust、Go 等）
+- 全局文件搜索（Cmd/Ctrl + P）
+
+### 终端
+- 集成真实终端（基于 node-pty + xterm.js）
+- 多终端标签页支持
+- 一键运行项目（自动检测 Node.js、Python、Rust、Go、Java 项目）
+
+### 项目管理
+- 文件树浏览器
+- 右键菜单（新建文件/文件夹、重命名、删除）
+- 最近项目记录
+- Git 状态显示（分支名、文件修改状态）
+
+### AI 集成
+- 支持 OpenAI / Anthropic API
+- 可配置 API Key、Base URL、Model
+
+### 界面
+- 玻璃拟态（Glassmorphism）设计风格
+- macOS 原生窗口适配
+- 深色主题
 
 ## 技术栈
 
-- **Electron** - 跨平台桌面应用框架
-- **React 19** - 用户界面库
-- **TypeScript** - 类型安全的 JavaScript
-- **Vite** - 快速的构建工具
-- **Tailwind CSS** - 原子化 CSS 框架
-- **Monaco Editor** - 代码编辑器
-- **xterm.js** - 终端模拟器
-- **node-pty** - 伪终端
+| 技术 | 用途 |
+|------|------|
+| Electron | 跨平台桌面应用 |
+| React 19 | UI 框架 |
+| TypeScript | 类型安全 |
+| Vite | 构建工具 |
+| Tailwind CSS | 样式 |
+| Monaco Editor | 代码编辑器 |
+| xterm.js + node-pty | 终端模拟 |
+| simple-git | Git 集成 |
+| electron-store | 数据持久化 |
 
-## 开发
+## 快速开始
 
 ### 环境要求
 
 - Node.js 18+
-- npm 或 pnpm
+- npm
 
-### 安装依赖
+### 安装
 
 ```bash
+git clone https://github.com/Gingaoyuzhan/Ging-IDE.git
+cd Ging-IDE
 npm install
 ```
 
-### 启动开发服务器
+### 开发
 
 ```bash
 npm run dev
@@ -43,34 +71,45 @@ npm run dev
 ### 构建
 
 ```bash
-# Windows
-npm run build:win
-
 # macOS
 npm run build:mac
+
+# Windows
+npm run build:win
 
 # Linux
 npm run build:linux
 ```
 
-构建产物位于 `dist` 目录。
+## 快捷键
+
+| 快捷键 | 功能 |
+|--------|------|
+| Cmd/Ctrl + P | 全局文件搜索 |
+| Cmd/Ctrl + S | 保存文件 |
+| Cmd/Ctrl + W | 关闭标签页 |
 
 ## 项目结构
 
 ```
-ging/
+Ging-IDE/
 ├── src/
 │   ├── main/           # Electron 主进程
-│   ├── preload/        # 预加载脚本
+│   ├── preload/        # 预加载脚本（IPC 桥接）
 │   └── renderer/       # React 渲染进程
 │       └── src/
-│           ├── components/  # React 组件
-│           └── assets/      # 静态资源
-├── resources/          # 应用图标等资源
-├── build/              # 构建配置
-└── dist/               # 构建输出
+│           ├── components/
+│           │   ├── CodeEditor.tsx      # 代码编辑器
+│           │   ├── Terminal.tsx        # 终端
+│           │   ├── ProjectDrawer.tsx   # 文件树
+│           │   ├── CommandPalette.tsx  # 文件搜索
+│           │   ├── SettingsPanel.tsx   # 设置面板
+│           │   └── ...
+│           └── App.tsx
+├── resources/          # 应用图标
+└── out/                # 构建输出
 ```
 
-## 许可证
+## License
 
 MIT
