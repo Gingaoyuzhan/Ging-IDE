@@ -39,6 +39,17 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // 项目路径变化时，终端自动 cd
+  useEffect(() => {
+    if (projectPath) {
+      setTimeout(() => {
+        terminalRefs.current.forEach((ref) => {
+          ref.runCommand(`cd "${projectPath}"`)
+        })
+      }, 300)
+    }
+  }, [projectPath])
+
   const handleOpenFolder = async () => {
     const result = await window.api.dialog.openFolder()
     if (result.success && result.data) {
