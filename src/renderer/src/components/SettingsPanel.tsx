@@ -39,6 +39,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
     model: ''
   })
   const [theme, setTheme] = useState<Theme>('amber')
+  const [pendingTheme, setPendingTheme] = useState<Theme>('amber')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -49,11 +50,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
       }
     })
     // Load saved theme
-    const savedTheme = localStorage.getItem('Ging-IDE-theme') as Theme
-    if (savedTheme && themes.find(t => t.id === savedTheme)) {
-      setTheme(savedTheme)
-      document.documentElement.setAttribute('data-theme', savedTheme)
-    }
+    const savedTheme = (localStorage.getItem('Ging-IDE-theme') as Theme) || 'amber'
+    setTheme(savedTheme)
+    setPendingTheme(savedTheme)
+    document.documentElement.setAttribute('data-theme', savedTheme)
   }, [])
 
   const handleSave = async () => {
@@ -65,9 +65,23 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   }
 
   const handleThemeChange = (newTheme: Theme) => {
-    setTheme(newTheme)
+    setPendingTheme(newTheme)
+    // Preview only - apply temporarily
     document.documentElement.setAttribute('data-theme', newTheme)
-    localStorage.setItem('Ging-IDE-theme', newTheme)
+  }
+
+  const handleSaveTheme = () => {
+    if (pendingTheme !== theme) {
+      setTheme(pendingTheme)
+      localStorage.setItem('Ging-IDE-theme', pendingTheme)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }
+  }
+
+  const handleResetTheme = () => {
+    setPendingTheme(theme)
+    document.documentElement.setAttribute('data-theme', theme)
   }
 
   const tabs = [
@@ -245,12 +259,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
                     key={t.id}
                     onClick={() => handleThemeChange(t.id)}
                     className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
-                      theme === t.id
+                      pendingTheme === t.id
                         ? 'border-accent-primary bg-accent-primary/10'
                         : 'border-border bg-white/5 hover:bg-white/10 hover:border-white/10'
                     }`}
                   >
-                    {theme === t.id && (
+                    {pendingTheme === t.id && (
                       <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent-primary flex items-center justify-center">
                         <Check size={12} className="text-black" />
                       </div>
@@ -273,11 +287,34 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
                 ))}
               </div>
 
-              <div className="p-4 rounded-xl bg-white/5 border border-border">
-                <p className="text-xs text-text-muted">
-                  主题会立即应用到整个界面，包括按钮颜色、光晕效果和高亮显示。设置会自动保存。
-                </p>
-              </div>
+              {/* Save/Reset buttons */}
+              {pendingTheme !== theme && (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-accent-primary/10 border border-accent-primary/30">
+                  <div className="flex-1">
+                    <p className="text-sm text-text-primary">主题已更改</p>
+                    <p className="text-xs text-text-muted">点击保存应用更改</p>
+                  </div>
+                  <button
+                    onClick={handleResetTheme}
+                    className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleSaveTheme}
+                    className="px-4 py-2 bg-accent-primary/20 hover:bg-accent-primary/30 text-accent-primary text-sm font-medium rounded-lg transition-colors"
+                  >
+                    保存
+                  </button>
+                </div>
+              )}
+
+              {saved && (
+                <div className="p-4 rounded-xl bg-mint/10 border border-mint/30 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-mint" />
+                  <p className="text-sm text-mint">主题已保存</p>
+                </div>
+              )}
             </div>
           )}
         </div>
