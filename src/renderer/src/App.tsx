@@ -15,6 +15,12 @@ interface TerminalTab {
 }
 
 function App() {
+  // Load theme on startup
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('Ging-IDE-theme') || 'amber'
+    document.documentElement.setAttribute('data-theme', savedTheme)
+  }, [])
+
   const [activeView, setActiveView] = useState('welcome')
   const [showTerminal, setShowTerminal] = useState(true)
   const [showFiles, setShowFiles] = useState(false)

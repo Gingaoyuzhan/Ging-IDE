@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Bot, Code2, Palette, Save, ChevronLeft } from 'lucide-react'
+import { Settings, Bot, Code2, Palette, Save, ChevronLeft, Check } from 'lucide-react'
 
 interface SettingsPanelProps {
   onBack: () => void
@@ -12,6 +12,24 @@ interface AIConfig {
   model: string
 }
 
+type Theme = 'amber' | 'rose' | 'sky' | 'violet' | 'emerald'
+
+interface ThemeOption {
+  id: Theme
+  name: string
+  description: string
+  primary: string
+  secondary: string
+}
+
+const themes: ThemeOption[] = [
+  { id: 'amber', name: 'Amber', description: '温暖活力', primary: '#f59e0b', secondary: '#fbbf24' },
+  { id: 'rose', name: 'Rose', description: '热情浪漫', primary: '#f43f5e', secondary: '#fb7185' },
+  { id: 'sky', name: 'Sky', description: '冷静清朗', primary: '#0ea5e9', secondary: '#38bdf8' },
+  { id: 'violet', name: 'Violet', description: '神秘创意', primary: '#8b5cf6', secondary: '#a78bfa' },
+  { id: 'emerald', name: 'Emerald', description: '清新自然', primary: '#10b981', secondary: '#34d399' },
+]
+
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('ai')
   const [aiConfig, setAiConfig] = useState<AIConfig>({
@@ -20,6 +38,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
     baseUrl: '',
     model: ''
   })
+  const [theme, setTheme] = useState<Theme>('amber')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -29,6 +48,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
         setAiConfig(result.data)
       }
     })
+    // Load saved theme
+    const savedTheme = localStorage.getItem('Ging-IDE-theme') as Theme
+    if (savedTheme && themes.find(t => t.id === savedTheme)) {
+      setTheme(savedTheme)
+      document.documentElement.setAttribute('data-theme', savedTheme)
+    }
   }, [])
 
   const handleSave = async () => {
@@ -37,6 +62,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme)
+    document.documentElement.setAttribute('data-theme', newTheme)
+    localStorage.setItem('Ging-IDE-theme', newTheme)
   }
 
   const tabs = [
@@ -200,28 +231,53 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
           )}
 
           {activeTab === 'appearance' && (
-            <div className="space-y-6 max-w-lg">
+            <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-text-primary mb-4">外观设置</h3>
-                <p className="text-sm text-text-muted mb-6">
-                  自定义界面外观
+                <h3 className="text-lg font-semibold text-text-primary mb-2">主题</h3>
+                <p className="text-sm text-text-muted">
+                  选择你喜欢的配色方案
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    主题
-                  </label>
-                  <select defaultValue="phosphor-dark" className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary">
-                    <option value="phosphor-dark">Phosphor Dark</option>
-                  </select>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                {themes.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleThemeChange(t.id)}
+                    className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
+                      theme === t.id
+                        ? 'border-accent-primary bg-accent-primary/10'
+                        : 'border-border bg-white/5 hover:bg-white/10 hover:border-white/10'
+                    }`}
+                  >
+                    {theme === t.id && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent-primary flex items-center justify-center">
+                        <Check size={12} className="text-black" />
+                      </div>
+                    )}
+
+                    {/* Color preview */}
+                    <div className="flex gap-2 mb-3">
+                      <div
+                        className="w-8 h-8 rounded-full"
+                        style={{ background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})` }}
+                      />
+                      <div className="flex-1 rounded-lg" style={{ background: t.primary, opacity: 0.15 }} />
+                    </div>
+
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-text-primary">{t.name}</div>
+                      <div className="text-xs text-text-muted">{t.description}</div>
+                    </div>
+                  </button>
+                ))}
               </div>
 
-              <p className="text-xs text-text-muted">
-                更多主题即将推出
-              </p>
+              <div className="p-4 rounded-xl bg-white/5 border border-border">
+                <p className="text-xs text-text-muted">
+                  主题会立即应用到整个界面，包括按钮颜色、光晕效果和高亮显示。设置会自动保存。
+                </p>
+              </div>
             </div>
           )}
         </div>
