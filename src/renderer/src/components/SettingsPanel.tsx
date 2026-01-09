@@ -173,10 +173,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
                   <label className="block text-sm font-medium text-text-secondary mb-2">
                     字体大小
                   </label>
-                  <select className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary">
+                  <select defaultValue="14" className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary">
                     <option value="12">12px</option>
                     <option value="13">13px</option>
-                    <option value="14" selected>14px</option>
+                    <option value="14">14px</option>
                     <option value="15">15px</option>
                     <option value="16">16px</option>
                   </select>
@@ -186,8 +186,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
                   <label className="block text-sm font-medium text-text-secondary mb-2">
                     Tab 大小
                   </label>
-                  <select className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary">
-                    <option value="2" selected>2 空格</option>
+                  <select defaultValue="2" className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary">
+                    <option value="2">2 空格</option>
                     <option value="4">4 空格</option>
                   </select>
                 </div>
@@ -213,8 +213,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
                   <label className="block text-sm font-medium text-text-secondary mb-2">
                     主题
                   </label>
-                  <select className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary">
-                    <option value="phosphor-dark" selected>Phosphor Dark</option>
+                  <select defaultValue="phosphor-dark" className="w-full px-3 py-2 bg-white/5 border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent-primary">
+                    <option value="phosphor-dark">Phosphor Dark</option>
                   </select>
                 </div>
               </div>

@@ -40,6 +40,7 @@ const Terminal = React.forwardRef<TerminalRef, TerminalProps>(({ id, cwd }, ref)
     let unsubData: (() => void) | null = null
     let unsubExit: (() => void) | null = null
     let resizeObserver: ResizeObserver | null = null
+    let onDataDisposable: { dispose: () => void } | null = null
 
     // 延迟初始化，确保容器已渲染
     const initTimer = setTimeout(() => {
@@ -107,7 +108,7 @@ const Terminal = React.forwardRef<TerminalRef, TerminalProps>(({ id, cwd }, ref)
       })
 
       // 用户输入
-      term.onData((data) => {
+      onDataDisposable = term.onData((data) => {
         window.api.terminal.write(termId, data)
       })
 
@@ -132,6 +133,7 @@ const Terminal = React.forwardRef<TerminalRef, TerminalProps>(({ id, cwd }, ref)
       resizeObserver?.disconnect()
       unsubData?.()
       unsubExit?.()
+      onDataDisposable?.dispose()
       window.api.terminal.destroy(termId)
       term?.dispose()
     }

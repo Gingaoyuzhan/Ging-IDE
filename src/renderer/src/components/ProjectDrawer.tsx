@@ -168,7 +168,10 @@ const ProjectDrawer: React.FC<ProjectDrawerProps> = ({
 
   const getFileGitStatus = (filePath: string): 'modified' | 'added' | 'deleted' | 'untracked' | null => {
     if (!gitStatus || !rootPath) return null
-    const relativePath = filePath.replace(rootPath + '/', '')
+    // 统一使用正斜杠处理路径
+    const normalizedPath = filePath.replace(/\\/g, '/')
+    const normalizedRoot = rootPath.replace(/\\/g, '/')
+    const relativePath = normalizedPath.replace(normalizedRoot + '/', '')
     if (gitStatus.modified.includes(relativePath)) return 'modified'
     if (gitStatus.created.includes(relativePath) || gitStatus.staged.includes(relativePath)) return 'added'
     if (gitStatus.deleted.includes(relativePath)) return 'deleted'

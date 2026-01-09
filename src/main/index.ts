@@ -507,7 +507,12 @@ app.whenReady().then(() => {
           })
         }
 
-        processStream()
+        processStream().catch((err) => {
+          console.error('AI stream error:', err)
+          BrowserWindow.getAllWindows().forEach((win) => {
+            win.webContents.send('ai:stream:end', requestId)
+          })
+        })
         return { success: true }
       } catch (error) {
         return { success: false, error: String(error) }
