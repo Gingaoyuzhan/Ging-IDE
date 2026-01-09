@@ -38,8 +38,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
     baseUrl: '',
     model: ''
   })
-  const [theme, setTheme] = useState<Theme>('amber')
-  const [pendingTheme, setPendingTheme] = useState<Theme>('amber')
+  const [theme, setTheme] = useState<Theme>(() => {
+    return (localStorage.getItem('Ging-IDE-theme') as Theme) || 'amber'
+  })
+  const [pendingTheme, setPendingTheme] = useState<Theme>(() => {
+    return (localStorage.getItem('Ging-IDE-theme') as Theme) || 'amber'
+  })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -49,12 +53,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
         setAiConfig(result.data)
       }
     })
-    // Sync theme state with current applied theme
-    const currentTheme = document.documentElement.getAttribute('data-theme') as Theme
-    if (currentTheme) {
-      setTheme(currentTheme)
-      setPendingTheme(currentTheme)
-    }
   }, [])
 
   const handleSave = async () => {
